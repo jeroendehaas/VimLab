@@ -52,6 +52,7 @@ backslash by the `mapleader` of your choice.
 * `\mh` show help for the current word
 * `\mv` show the variable the current is on
 * `gn`  go to the next section
+* `gN`  go to the previous section
 
 VimLab also provides two commands to quickly open the documentation or help for
 a function:
