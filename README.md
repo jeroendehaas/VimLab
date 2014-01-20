@@ -6,7 +6,7 @@ tmux to maintain a MATLAB session from within vim.
 
 ## Requirements
 VimLab relies on tmux and screen.vim to set up and communicate with a MATLAB
-session and expects matlab to be on your $PATH. Automatic code analysis is
+session and expects matlab to be on your `$PATH`:w. Automatic code analysis is
 provided by the excellent syntastic plugin if the mlint command (provided by
 MATLAB) is on your path as well. 
 
@@ -15,13 +15,13 @@ VimLab requires vim to run inside a tmux session. Linux users may find a tmux
 package is provided by their favorite distribution. For OS X users, I recommend
 installing tmux using [homebrew](http://brew.sh). 
 
-For an excellent introduction to tmux, please see the book ["tmux:
+For a well written introduction to tmux, please take a look at the book ["tmux:
 Productive Mouse-Free Development"](http://pragprog.com/book/bhtmux/tmux) by
 Brian P. Hogan. 
 
 ### screen.vim
-[Screen.vim](https://github.com/ervandew/screen) is reponsible for launching
-MATLAB in a new pane and the communication between vim and MATLAB. Assuming your
+VimLab uses [Screen.vim](https://github.com/ervandew/screen) to launch MATLAB in
+a new pane and the communication between vim and MATLAB. Assuming your
 
 ### Syntastic (Optional)
 Install [Syntastic](https://github.com/scrooloose/syntastic) if you wish to have
@@ -29,13 +29,11 @@ your MATLAB code automatically analyzed when it is saved.
  
 ## Installation
 I recommend installing VimLab using [Vundle](https://github.com/gmarik/vundle).
-Add the following line to your .vimrc file:
-```vim
-Bundle "dajero/VimLab"
-```
-Also ensure, that screen.vim and, optionally, syntastic are also listed
+Add the following lines to your .vimrc file:
 ```vim
 Bundle "ervandew/screen"
+Bundle "dajero/VimLab"
+"Optional, if you desire automatic code analysis
 Bundle "scrooloose/syntastic"
 ```
 Next, either quit and relaunch vim or source `.vimrc` from within your current
