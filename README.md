@@ -21,7 +21,7 @@ Brian P. Hogan.
 
 ### screen.vim
 VimLab uses [Screen.vim](https://github.com/ervandew/screen) to launch MATLAB in
-a new pane and the communication between vim and MATLAB. Assuming your
+a new pane and the communication between vim and MATLAB. 
 
 ### Syntastic (Optional)
 Install [Syntastic](https://github.com/scrooloose/syntastic) if you wish to have
