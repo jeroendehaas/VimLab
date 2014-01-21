@@ -1,14 +1,13 @@
-# VimLab
-VimLab tries to replicate MATLAB's support for code sections in Vim. It uses
+# VimLab 
+VimLab replicates MATLAB's support for code sections in Vim. It uses
 tmux to maintain a MATLAB session from within vim.
 
-
-
 ## Requirements
-VimLab relies on tmux and screen.vim to set up and communicate with a MATLAB
-session and expects matlab to be on your `$PATH`. Automatic code analysis is
-provided by the excellent syntastic plugin if the mlint command (provided by
-MATLAB) is on your path as well. 
+VimLab relies on tmux and screen.vim which are used to set up and communicate
+with a MATLAB session. It expects the `matlab` command to be on your `$PATH`.
+Code analysis, similar to that offered by MATLAB's editor, is provided by the
+excellent Syntastic plugin. If `mlint` is on your path as well, Syntastic will
+automatically analyze your MATLAB code when it's saved.
 
 ### tmux
 VimLab requires vim to run inside a tmux session. Linux users may find a tmux
@@ -20,8 +19,8 @@ Productive Mouse-Free Development"](http://pragprog.com/book/bhtmux/tmux) by
 Brian P. Hogan. 
 
 ### screen.vim
-VimLab uses [Screen.vim](https://github.com/ervandew/screen) to launch MATLAB in
-a new pane and the communication between vim and MATLAB. 
+VimLab uses [Screen.vim](https://github.com/ervandew/screen) to manage a MATLAB
+session within tmux.
 
 ### Syntastic (Optional)
 Install [Syntastic](https://github.com/scrooloose/syntastic) if you wish to have
@@ -47,10 +46,10 @@ your mapleader to a different character, please mentally substitute the
 backslash by the `mapleader` of your choice. 
 
 * `\mm` starts matlab
-* `\ms` sends section the cursor is in to MATLAB
+* `\ms` sends the current section to MATLAB
 * `\md` open the documentation for the current word
 * `\mh` show help for the current word
-* `\mv` show the variable the current is on
+* `\mv` show the variable the cursor is on
 * `gn`  go to the next section
 * `gN`  go to the previous section
 
