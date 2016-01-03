@@ -26,11 +26,19 @@
 "(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 "SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 " }}}
+if !exists('g:matlab_quickfix_list')
+	let g:matlab_quickfix_list="mlint"
+endif
+if !exists('g:delete_tmp_file_after')
+	let g:delete_tmp_file_after=0
+endif
 if exists('b:did_matlab_vimlab_plugin')
 	finish
 endif
+
 let b:did_matlab_vimlab_plugin = 1
 let s:matlab_always_create = 0
+
 " Define functions (run only once)
 if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_create')
 	runtime 'screen.vim'
@@ -68,12 +76,6 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 		call g:ScreenShellSend('whos '.a:var.';')
 	endfunction
 
-	function! s:SendToMatlab()
-		let beginning = s:FirstLineInSection()
-		let end = s:LastLineInSection()
-		exe beginning.','.end.'ScreenSend'
-	endfunction
-
 	function! s:SendLineToMatlab()
 		exe '.'.'ScreenSend'
 	endfunction
@@ -82,10 +84,139 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 		exe '.'.'ScreenSend'
 	endfunction
 
-	" Run current script 
-	function! s:RunMatFile()
-		let commands="cd('".expand("%:p:h")."\'); run('".expand("%:p")."')\n"
+	function! s:SendSelectionToMatlabRevise()
+		call s:CreateTmpMatlabFile()
+		let b:VisualLineCounter+=1
+		if b:VisualLineCounter==b:NumberOfSelectedLines+1
+			call s:RunTmpFile()
+		endif
+		call s:DeleteTmpMatFile()
+	endfunction
+
+	function! s:RunTmpFile()
+		let commands="cd('".expand("%:p:h")."');MatVimTmp;\n"
 		call g:ScreenShellSend(commands)
+	endfunction
+
+	function! s:DeleteTmpMatFile()
+		if g:delete_tmp_file_after==1
+			silent! execute "!rm -f".expand("%:p:h")."/MatVimTmp.m"
+		endif
+	endfunction
+
+	function! s:CreateTmpMatlabFile()
+		if b:VisualLineCounter==1
+			call s:CountSelectedLines()
+			call s:SaveRegisterA()
+			call s:AddTryToMfile()
+			let @A="\t".getline(".")
+			let @A="\n"
+		else
+			let @A="\t".getline(".")
+			let @A="\n"
+			if b:VisualLineCounter==b:NumberOfSelectedLines
+				call s:AddCatchEndToMfile()
+				call s:WriteRegisterAToFile()
+			endif
+		endif
+
+		if b:VisualLineCounter==b:NumberOfSelectedLines+1
+			call s:RestoreRegisterA()
+		endif
+	endfunction
+
+	function! s:SaveRegisterA()
+		let s:RegisterTmp=@a
+	endfunction
+
+	function! s:RestoreRegisterA()
+		let @a=s:RegisterTmp
+	endfunction
+
+	function! s:CountSelectedLines()
+		let b:FirstLineInSelection=line("'<")
+		let b:LastLineInSelection=line("'>")
+		let b:NumberOfSelectedLines=b:LastLineInSelection-b:FirstLineInSelection
+		let b:NumberOfSelectedLines+=1
+		let b:CurrentMatTmpLineOffset=b:FirstLineInSelection-3
+	endfunction
+
+	function! s:AddTryToMfile()
+		let @a="try\n"
+	endfunction
+
+	function! s:AddCatchEndToMfile()
+		let @A="catch MatlabErrorForVim\n"
+		let @A="\tCurrentMatFile='".expand("%:p")."';\n"
+		let @A="\tMfileTmpfileLineOffset=".b:CurrentMatTmpLineOffset.";\n"
+		let @A="\tfileIDForVimError = fopen('/tmp/MatlabErrorForVim.err','w');\n"
+		let @A="\tfor iiForVimError = numel(MatlabErrorForVim.stack):-1:1\n"
+		let @A="\t\tswitch MatlabErrorForVim.stack(iiForVimError).name\n"
+		let @A="\t\tcase 'MatVimTmp'\n"
+		let @A="\t\t\tfprintf(fileIDForVimError,'Error in %s at line %d:\ %s\\n',CurrentMatFile, MatlabErrorForVim.stack(iiForVimError).line+MfileTmpfileLineOffset, 'refer to the command line');\n"
+		let @A="\t\totherwise\n"
+		let @A="\t\t\tfprintf(fileIDForVimError,'Error in %s at line %d:\ %s\\n',MatlabErrorForVim.stack(iiForVimError).file, MatlabErrorForVim.stack(iiForVimError).line, 'refer to the command line');\n"
+		let @A="\t\tend\n"
+		let @A="\tend\n"
+		let @A="\tfclose(fileIDForVimError);\n"
+		let @A="\trethrow(MatlabErrorForVim);\n"
+		let @A="end\n"
+		let @A="delete('".expand("%:p:h")."/MatVimTmp.m');\n"
+	endfunction
+
+	function! s:WriteRegisterAToFile()
+		" silent! !rm -f /tmp/MatVimTmp.m
+		" redir > /tmp/MatVimTmp.m
+		execute "redir! >".expand("%:h")."/MatVimTmp.m"
+		echo @a
+		redir END
+		redraw!
+	endfunction
+
+	function! s:LoadMatErrToQuickfix()
+		let s:CurrentErrorFormat = &errorformat
+		setlocal errorformat=Error\ in\ %f\ at\ line\ %l:\ %m
+		cfile /tmp/MatlabErrorForVim.err
+		setlocal errorformat=s:CurrentErrorFormat
+	endfunction
+
+	function! s:RunMatFile()
+		let commands="run('".expand("%:p")."');\n"
+		call g:ScreenShellSend(commands)
+	endfunction
+
+	function! s:RunMatFileRevise()
+		call s:SaveRegisterA()
+		let beginning = 1
+		let ending = line('$')
+		let b:CurrentMatTmpLineOffset=beginning-3
+		call s:AddTryToMfile()
+		exe beginning.','.ending.'yank A'
+		call s:AddCatchEndToMfile()
+		call s:WriteRegisterAToFile()
+		call s:RunTmpFile()
+		call s:RestoreRegisterA()
+		call s:DeleteTmpMatFile()
+	endfunction
+
+	function! s:SendSectionToMatlab()
+		let beginning = s:FirstLineInSection()
+		let ending = s:LastLineInSection()
+		exe beginning.','.ending.'ScreenSend'
+	endfunction
+
+	function! s:SendSectionToMatlabRevise()
+		call s:SaveRegisterA()
+		let beginning = s:FirstLineInSection()
+		let ending = s:LastLineInSection()
+		let b:CurrentMatTmpLineOffset=beginning-3
+		call s:AddTryToMfile()
+		exe beginning.','.ending.'yank A'
+		call s:AddCatchEndToMfile()
+		call s:WriteRegisterAToFile()
+		call s:RunTmpFile()
+		call s:RestoreRegisterA()
+		call s:DeleteTmpMatFile()
 	endfunction
 
 	function! s:ClearMatlabScreen()
@@ -187,22 +318,45 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 	let s:matlab_extras_created_functions=1
 end
 
-let s:default_maps = [
-			\ ['MatlabNextSection', 'gn', 'NextSection'],
-			\ ['MatlabPrevSection', 'gN', 'PrevSection'],
-			\ ['MatlabStart', '<leader>mm', 'StartMatlab'],
-			\ ['MatlabSend', '<leader>ms', 'SendToMatlab'],
-			\ ['MatlabDocCurrentWord', '<leader>md', 'DocCurrentWord'],
-			\ ['MatlabHelpCurrentWord', '<leader>mh', 'HelpCurrentWord'],
-			\ ['MatlabShowCurrentVar', '<leader>mv', 'ShowCurrentVar'],
-			\ ['MatlabCurrentLine', '<leader>ml', 'SendLineToMatlab'],
-			\ ['MatlabCurrentSelection', '<leader>me', 'SendSelectionToMatlab'],
-			\ ['MatlabClearScreen', '<leader>mc', 'ClearMatlabScreen'],
-			\ ['MatlabCloseAll', '<leader>mx', 'CloseAll'],
-			\ ['MatlabRunFile', '<leader>mf', 'RunMatFile'],
-			\ ['MatlabAddBreakpoint', '<leader>mb', 'AddBreakpoint'],
-			\ ['MatlabRemoveBreakpoints', '<leader>mB', 'RemoveBreakpoints'],
-			\]
+nnoremap <S-V> :let b:VisualLineCounter=1<CR> <S-V> 
+nnoremap v :let b:VisualLineCounter=1<CR> v 
+if g:matlab_quickfix_list=="error"
+	let s:default_maps = [
+				\ ['MatlabNextSection', 'gn', 'NextSection'],
+				\ ['MatlabPrevSection', 'gN', 'PrevSection'],
+				\ ['MatlabStart', '<leader>mm', 'StartMatlab'],
+				\ ['MatlabDocCurrentWord', '<leader>md', 'DocCurrentWord'],
+				\ ['MatlabHelpCurrentWord', '<leader>mh', 'HelpCurrentWord'],
+				\ ['MatlabShowCurrentVar', '<leader>mv', 'ShowCurrentVar'],
+				\ ['MatlabCurrentLine', '<leader>ml', 'SendLineToMatlab'],
+				\ ['MatlabClearScreen', '<leader>mc', 'ClearMatlabScreen'],
+				\ ['MatlabCloseAll', '<leader>mx', 'CloseAll'],
+				\ ['MatlabAddBreakpoint', '<leader>mb', 'AddBreakpoint'],
+				\ ['MatlabRemoveBreakpoints', '<leader>mB', 'RemoveBreakpoints'],
+				\ ['MatlabSectionSend', '<leader>ms', 'SendSectionToMatlabRevise'],
+				\ ['MatlabCurrentSelection', '<leader>me', 'SendSelectionToMatlabRevise'],
+				\ ['MatlabRunFile', '<leader>mf', 'RunMatFileRevise'],
+				\ ['LoadErrors', '<leader>mq', 'LoadMatErrToQuickfix'],
+				\]
+else
+	let s:default_maps = [
+				\ ['MatlabNextSection', 'gn', 'NextSection'],
+				\ ['MatlabPrevSection', 'gN', 'PrevSection'],
+				\ ['MatlabStart', '<leader>mm', 'StartMatlab'],
+				\ ['MatlabSectionSend', '<leader>ms', 'SendSectionToMatlab'],
+				\ ['MatlabDocCurrentWord', '<leader>md', 'DocCurrentWord'],
+				\ ['MatlabHelpCurrentWord', '<leader>mh', 'HelpCurrentWord'],
+				\ ['MatlabShowCurrentVar', '<leader>mv', 'ShowCurrentVar'],
+				\ ['MatlabCurrentLine', '<leader>ml', 'SendLineToMatlab'],
+				\ ['MatlabCurrentSelection', '<leader>me', 'SendSelectionToMatlab'],
+				\ ['MatlabClearScreen', '<leader>mc', 'ClearMatlabScreen'],
+				\ ['MatlabCloseAll', '<leader>mx', 'CloseAll'],
+				\ ['MatlabRunFile', '<leader>mf', 'RunMatFile'],
+				\ ['MatlabAddBreakpoint', '<leader>mb', 'AddBreakpoint'],
+				\ ['MatlabRemoveBreakpoints', '<leader>mB', 'RemoveBreakpoints'],
+				\]
+endif
+
 for [to_map, key, fn] in s:default_maps
 	if !hasmapto('<Plug>'.to_map)
 		exe "map <unique> <buffer> ".key." <Plug>".to_map
@@ -214,6 +368,7 @@ endfor
 if !exists(':MATDoc')
 	command -nargs=1 MATDoc :call <SID>Doc(<f-args>)
 endif
+
 if !exists(':MATHelp')
 	command -nargs=1 MATHelp :call <SID>Help(<f-args>)
 endif
