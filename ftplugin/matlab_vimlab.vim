@@ -161,7 +161,7 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 		let @A="\tfclose(fileIDForVimError);\n"
 		let @A="\trethrow(MatlabErrorForVim);\n"
 		let @A="end\n"
-		let @A="delete('".expand("%:p:h")."/MatVimTmp.m');\n"
+		let @A="delete('/tmp/MatlabErrorForVim.err');\n"
 	endfunction
 
 	function! s:WriteRegisterAToFile()
