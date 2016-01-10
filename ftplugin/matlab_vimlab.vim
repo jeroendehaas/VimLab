@@ -101,6 +101,7 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 	function! s:DeleteTmpMatFile()
 		if g:delete_tmp_file_after==1
 			silent! execute "!rm -f".expand("%:p:h")."/MatVimTmp.m"
+			redraw!
 		endif
 	endfunction
 
@@ -168,7 +169,7 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 		" silent! !rm -f /tmp/MatVimTmp.m
 		" redir > /tmp/MatVimTmp.m
 		execute "redir! >".expand("%:h")."/MatVimTmp.m"
-		echo @a
+		silent! echo @a
 		redir END
 		redraw!
 	endfunction
