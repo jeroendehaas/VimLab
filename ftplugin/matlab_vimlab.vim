@@ -26,6 +26,7 @@
 "(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 "SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 " }}}
+"  modified by yaj030
 if !exists('g:matlab_quickfix_list')
 	let g:matlab_quickfix_list="mlint"
 endif
