@@ -187,18 +187,32 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 	endfunction
 
 	function! s:RunMatFileRevise()
-		call s:SaveRegisterA()
-		let beginning = 1
-		let ending = line('$')
-		let b:CurrentMatTmpLineOffset=beginning-3
-		call s:AddTryToMfile()
-		exe beginning.','.ending.'yank A'
-		call s:AddCatchEndToMfile()
-		call s:WriteRegisterAToFile()
-		call s:RunTmpFile()
-		call s:RestoreRegisterA()
-		call s:DeleteTmpMatFile()
+		let words = []
+		let line_number = 1
+		while empty(words)
+			let line_tmp = getline(line_number)
+			let words = split(line_tmp)
+			let line_number = line_number + 1
+		endwhile
+		let first_word = words[0]
+		
+		if first_word == "function"
+			call s:RunMatFile()
+		else
+			call s:SaveRegisterA()
+			let beginning = 1
+			let ending = line('$')
+			let b:CurrentMatTmpLineOffset=beginning-3
+			call s:AddTryToMfile()
+			exe beginning.','.ending.'yank A'
+			call s:AddCatchEndToMfile()
+			call s:WriteRegisterAToFile()
+			call s:RunTmpFile()
+			call s:RestoreRegisterA()
+			call s:DeleteTmpMatFile()
+		endif
 	endfunction
+
 
 	function! s:SendSectionToMatlab()
 		let beginning = s:FirstLineInSection()
