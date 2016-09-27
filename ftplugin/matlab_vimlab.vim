@@ -56,7 +56,6 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 			let shell_command = shell_command.'!'
 		endif
 		exe shell_command.' '.matlab_command
-		call g:ScreenShellSend('clc;')
 	endfunction
 
 	function! s:TempOutputFilename()
@@ -195,9 +194,9 @@ if !exists('s:matlab_extras_created_functions') || exists('s:matlab_always_creat
 			let words = split(line_tmp)
 			let line_number = line_number + 1
 		endwhile
-		let first_word = words[0]
+		let b:first_word = words[0]
 		
-		if first_word == "function"
+		if b:first_word == "function"
 			call s:RunMatFile()
 		else
 			call s:SaveRegisterA()
